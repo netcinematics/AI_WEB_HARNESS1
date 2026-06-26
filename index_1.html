@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma 4 LiteRT-LM Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --user-msg-bg: #3b82f6;
+            --bot-msg-bg: #334155;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: var(--surface-color);
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            background: #475569;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background: #22c55e;
+            color: #0f172a;
+        }
+
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--user-msg-bg);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background-color: var(--bot-msg-bg);
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.9);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 14px 16px;
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        input[type="text"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button {
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+            display: none;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: var(--danger-hover);
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header class="header">
+            <h1>✨ Gemma 4 LiteRT-LM</h1>
+            <span class="status-badge" id="statusBadge">Not Initialized</span>
+        </header>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message bot">
+                👋 Hello! Click "Initialize Engine" below to download and load the Gemma 4 model into your browser. Note: This will download a large file (~2-3GB) to your browser cache on first run.
+            </div>
+        </div>
+
+        <div class="input-area">
+            <button id="initBtn" class="btn-primary" onclick="initializeEngine()">Initialize Engine</button>
+            <input type="text" id="userInput" placeholder="Type a message..." disabled onkeypress="handleKeyPress(event)">
+            <button id="sendBtn" class="btn-primary" onclick="sendMessage()" disabled style="display: none;">Send</button>
+            <button id="cancelBtn" class="btn-danger" onclick="cancelGeneration()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Import LiteRT-LM from CDN -->
+    <script type="module">
+        import { Engine } from 'https://cdn.jsdelivr.net/npm/@litert-lm/core/+esm';
+
+        // Globals to hold the engine and conversation instance
+        let engine = null;
+        let chat = null;
+        let isGenerating = false;
+        let cancelFlag = false;
+
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const initBtn = document.getElementById('initBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const statusBadge = document.getElementById('statusBadge');
+
+        // Note: For a local install, you can replace the model URL below with a relative path:
+        // e.g., model: './models/gemma-4-E2B-it-web.litertlm'
+        const MODEL_URL = 'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.litertlm';
+
+        window.initializeEngine = async () => {
+            try {
+                initBtn.disabled = true;
+                initBtn.textContent = 'Initializing... (Downloading model)';
+                statusBadge.textContent = 'Downloading...';
+                
+                // 1. Initialize the Engine
+                engine = await Engine.create({
+                    model: MODEL_URL
+                });
+
+                // 2. Create a conversation instance
+                chat = await engine.createConversation();
+
+                // Update UI state
+                statusBadge.textContent = 'Ready';
+                statusBadge.classList.add('active');
+                initBtn.style.display = 'none';
+                userInput.disabled = false;
+                sendBtn.style.display = 'block';
+                sendBtn.disabled = false;
+                userInput.focus();
+
+                appendMessage('bot', '✅ Engine initialized successfully. How can I help you today?');
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                statusBadge.textContent = 'Error';
+                initBtn.textContent = 'Retry Initialization';
+                initBtn.disabled = false;
+                appendMessage('bot', '❌ Failed to initialize the engine. Make sure you are running via localhost (e.g., HTTP server) and your browser supports WebGPU.');
+            }
+        };
+
+        window.sendMessage = async () => {
+            const text = userInput.value.trim();
+            if (!text || isGenerating) return;
+
+            // Update UI for sending
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.style.display = 'none';
+            cancelBtn.style.display = 'block';
+            
+            appendMessage('user', text);
+            const botMsgEl = appendMessage('bot', '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>', true);
+            
+            isGenerating = true;
+            cancelFlag = false;
+            let fullResponse = "";
+
+            try {
+                // 3. Send a message and stream the response
+                const responseStream = await chat.sendMessageStreaming(text);
+                
+                // Clear the typing indicator once the stream starts
+                botMsgEl.innerHTML = '';
+
+                for await (const chunk of responseStream) {
+                    if (cancelFlag) {
+                        break; // Stop processing if canceled
+                    }
+                    if (chunk && chunk.content && chunk.content[0] && chunk.content[0].text) {
+                        fullResponse += chunk.content[0].text;
+                        // Extremely basic markdown formatting for the UI
+                        botMsgEl.innerHTML = fullResponse.replace(/\n/g, '<br>');
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                }
+            } catch (error) {
+                console.error("Generation error:", error);
+                botMsgEl.innerHTML += '<br><em>⚠️ Generation encountered an error.</em>';
+            } finally {
+                // Reset UI state
+                isGenerating = false;
+                cancelFlag = false;
+                userInput.disabled = false;
+                cancelBtn.style.display = 'none';
+                sendBtn.style.display = 'block';
+                userInput.focus();
+                
+                if (!fullResponse) {
+                    botMsgEl.innerHTML = '<em>Generation cancelled or returned empty.</em>';
+                }
+            }
+        };
+
+        window.cancelGeneration = () => {
+            if (isGenerating) {
+                cancelFlag = true;
+                cancelBtn.textContent = 'Cancelling...';
+                cancelBtn.disabled = true;
+                
+                // Reset button text shortly after
+                setTimeout(() => {
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.disabled = false;
+                }, 500);
+            }
+        };
+
+        window.handleKeyPress = (e) => {
+            if (e.key === 'Enter' && !isGenerating) {
+                sendMessage();
+            }
+        };
+
+        function appendMessage(sender, htmlContent, isHTML = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            if (isHTML) {
+                msgDiv.innerHTML = htmlContent;
+            } else {
+                msgDiv.textContent = htmlContent;
+            }
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return msgDiv;
+        }
+    </script>
+</body>
+</html>
