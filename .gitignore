@@ -205,5 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
 semantic_spectroscopy_1/models/gemma-4-E2B-it-web.task
 *.task
+
+src/*
