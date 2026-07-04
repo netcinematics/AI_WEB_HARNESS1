@@ -142,8 +142,8 @@
             <button onclick="toggleTitlePanel(false)" class="btn-close" style="position: absolute; right: 0.5rem; top: 0.5rem;">✕</button>
             <h1 style="font-size: 1.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">AI_WEB_HARNESS</h1>
             <p class="monospace-text" style="font-size: 18px; color: skyblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 0; font-style: italic;">PHASE_1 : GEMMA_WEB_ENGINE.</p>
-            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">Gemma "Proof of Life".</p>
-            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">Basic - Brain Diagnostics:</p>
+            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">Gemma - BIOMIMICRY : "Proof of Life".</p>
+            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">BASIC - Brain Diagnostics:</p>
             
             <div class="flex items-center" style="margin-top: 0.5rem; width: 100%;">
                 <select id="domain-select" style="color:skyblue;" class="domain-select monospace-text" onchange="triggerConceptInference(this.value)">
@@ -153,7 +153,7 @@
                     <option style="color:skyblue;" value="test_persona">3) AGENT injected PERSONA?</option>
                     <option style="color:skyblue;" value="test_signature">4) LLM Signature (HIPPOCAMPUS | identity)</option>
                     <option style="color:skyblue;" value="test_neolang">5) NEOLOGISM Inference?</option>
-                    <option style="color:skyblue;" value="test_context">6) Loop a HEARING as a JUDGE?</option>
+                    <option style="color:skyblue;" value="test_context">6) JUDGE, What is EXISTENCE?</option>
                     <option style="color:skyblue;" value="test_dedupe">7) CONCEPT SIMILARITY in METASTATE?</option>
                     <option style="color:skyblue;" value="test_medstate">8) Show MEDICAL METASTASIS?</option>
                 </select>
@@ -685,16 +685,23 @@ Do not include numbers, newlines, labels, or conversational text.`;
                 // TEST 5: 
                 displayDomain = '"CONCEPTUAL_SPECTROSCOPY?"';
                 prompt = `Task: Generate exactly 10 subtopics for the concept: "CONCEPTUAL_SPECTROSCOPY?".`;
-            } else if (TEST_ID === "test_context") {
-                // TEST 6: 
-                displayDomain = "CONTEXT_METASTATE?";
-                prompt = `Task: Generate exactly 10 subtopics for the concept: "CONTEXTUAL_INFERENCE?".`;
-            } else if (TEST_ID === "test_dedupe") {
-                // TEST 7: 
-                displayDomain = "DE_DUPE_METASTATE";
-                prompt = `Task: Generate exactly 10 subtopics for the concept: "MEDICAL METASTASIS".`;
-                subINFERENCE(prompt, displayDomain);
+          
+} else if (TEST_ID === "test_context") {
+                // TEST 6: Loop a JURY and a JUDGE?
+                displayDomain = "What is EXISTENCE?";
+                prompt = "What is existence? Constraint, 50 words, 5 subtopics."
+                subInference_JUDGE_1(prompt, displayDomain);
+                
                 return;
+            } else if (TEST_ID === "test_dedupe") {
+                // TEST 7: Read Axioms & Extract aWORDZa
+                displayDomain = "aWORDZa_TOP_10";
+                test7_readAxioms(displayDomain);
+                return;                
+
+
+
+
             } else if (TEST_ID === "test_medstate") {
                 // TEST 8: 
                 displayDomain = "MEDICAL_METASTASIS";
@@ -845,6 +852,109 @@ Do not include numbers, newlines, labels, or conversational text.`;
                 isInferencing = false;
             }
         }
+
+async function subInference_JUDGE_1(initialPrompt, focusLabel) {
+            if (!window.LLM_INFERENCE) {
+                addLog(`[SYSTEM ALERT] Local LLM engine offline. Running logic topology simulation...`, 'critical');
+                return;
+            }
+
+            try {
+                isInferencing = true;
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot yellow"; text.innerText = "LLM THINKING..."; text.style.color = "#facc15";
+
+                // --- LOOP 1: INITIAL QUERY ---
+                addLog(`>> LOOP 1_OPEN: Querying latent space... "${initialPrompt}"`, 'info');
+                toggleLoading(true, "LOOP 1: EXISTENCE...", true);
+                
+                const streamContainer1 = document.createElement('div');
+                streamContainer1.style.color = "#00ffcc"; streamContainer1.style.paddingLeft = "1rem"; streamContainer1.style.borderLeft = "2px solid rgba(0,255,204,0.5)";
+                logFeed.appendChild(streamContainer1);
+                
+                let firstResponse = "";
+                await window.LLM_INFERENCE.generateResponse(initialPrompt, (partialResult, complete) => {
+                    if (partialResult) {
+                        streamContainer1.textContent += partialResult;
+                        firstResponse += partialResult;
+                        logFeed.scrollTop = logFeed.scrollHeight;
+                    }
+                });
+
+                addLog(`>> LOOP 1_CLOSED: Target acquired.`, 'reflection');
+
+debugger;
+                // --- LOOP 2: JUDGE & ORGANIZE ---
+                const judgePrompt = `Task: Act as a judge. Read the following text about existence. 
+                Choose 10 to 20 words that answer the question, as related to consciousness or awareness.
+                Expand the concepts discussed into a top twenty list, up to 20 topics, 
+                with 4 words or less per topic. 
+                Constraint: 1) Output strictly as a single line of comma-separated values (CSV) without description.
+                          2) Do not include numbers, newlines, labels, or conversational text.\n
+                          3) Here is the context to read:"${firstResponse}"`;
+                
+                addLog(`>> LOOP 2_OPEN: Judging and ordering concepts (Top 20 + omissions + inversions)...`, 'info');
+                toggleLoading(true, "LOOP 2: JUDGING...", true);
+                
+                const streamContainer2 = document.createElement('div');
+                streamContainer2.style.color = "#ff00ff"; streamContainer2.style.paddingLeft = "1rem"; streamContainer2.style.borderLeft = "2px solid rgba(255,0,255,0.5)";
+                streamContainer2.style.marginTop = "0.5rem";
+                logFeed.appendChild(streamContainer2);
+                
+                let finalResponse = "";
+                await window.LLM_INFERENCE.generateResponse(judgePrompt, (partialResult, complete) => {
+                    if (partialResult) {
+                        streamContainer2.textContent += partialResult;
+                        finalResponse += partialResult;
+                        logFeed.scrollTop = logFeed.scrollHeight;
+                    }
+                });
+
+                toggleLoading(false);
+                addLog(`>> LOOP 2_CLOSED: Parsing conceptual fabric...`, 'reflection');
+
+                // Pass the final judged text to the sentence topology builder 
+                buildSentenceTopology(focusLabel, finalResponse);
+
+                dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
+                isInferencing = false;
+
+            } catch(e) {
+                toggleLoading(false); 
+                addLog(`[LLM_ERROR] ${e.message}`, 'critical');
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot red"; text.innerText = `LLM ERROR`; text.style.color = "#ef4444";
+                isInferencing = false;
+            }
+        }
+
+        async function test7_readAxioms(focusLabel) {
+            try {
+                addLog(`>> FETCH_START: Reading local axioms from ./markdown_brain/ATOMZ_1.md...`, 'info');
+                toggleLoading(true, "FETCHING AXIOMS...", true);
+                debugger; //Add second prompt to include axiomatic_prefix. and ask LLM 10 metastate of AXIOMZ.
+                // Utilize standard Fetch API to grab the local markdown layer
+                const fileResponse = await fetch('./markdown_brain/AXIOMZ_1.md');
+                if (!fileResponse.ok) {
+                    throw new Error(`Failed to load markdown file: ${fileResponse.statusText}`);
+                }
+                const axiomsContext = await fileResponse.text();
+                
+                // Enforce the CSV output constraint to guarantee a clean buildDynamicTopology map
+                const prompt = `The following are axioms provided for context:\n\n---\n${axiomsContext}\n---\n\nTask: Based on these axioms, what are the top 10 words in aWORDZa?\nConstraint: Output strictly as a single line of comma-separated values (CSV) without description.\nDo not include numbers, newlines, labels, or conversational text.`;
+                
+                addLog(`>> AXIOMS LOADED. Initiating conceptual inference...`, 'reflection');
+                debugger; //Add second prompt to include axiomatic_prefix. and ask LLM 10 metastate of AXIOMZ.
+                // Route directly into the existing subINFERENCE to handle streaming and 3D node generation
+                subINFERENCE(prompt, focusLabel);
+
+            } catch (error) {
+                toggleLoading(false);
+                addLog(`[FETCH_ERROR] ${error.message}. Ensure WEBMAX environment is serving files correctly.`, 'critical');
+            }
+        }
+
+//______
 
         function buildDynamicTopology(centerLabel, csvData) {
             let tokens = csvData.replace(/[*"']/g, '').split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 2);

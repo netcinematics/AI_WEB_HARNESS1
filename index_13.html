@@ -9,8 +9,9 @@
     <script src="./src/OrbitControls.js"></script>    
     
     <style>
-        body { margin: 0; background: #000b0b; color: #00ffcc; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; width: 100vw; height: 100vh; }
-        * { box-sizing: border-box; }
+        body { margin: 0; background: #000b0b; color: #00ffcc; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; width: 100vw; height: 100vh; user-select: text; -webkit-user-select: text; }
+        * { box-sizing: border-box; user-select: text; -webkit-user-select: text; }
+        button { user-select: none; -webkit-user-select: none; }
         
         .monospace-text { font-family: 'Courier New', Courier, monospace; }
 
@@ -32,7 +33,7 @@
         .output-panel { transform: translate(-50%, 0); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s; }
         .output-panel.hidden-bottom { transform: translate(-50%, 120%); opacity: 0; pointer-events: none; }
 
-        .data-node { border-left: 2px solid transparent; padding-left: 12px; margin-bottom: 6px; padding-top: 4px; padding-bottom: 4px; transition: all 0.2s; }
+        .data-node { border-left: 2px solid transparent; padding-left: 12px; margin-bottom: 6px; padding-top: 4px; padding-bottom: 4px; transition: all 0.2s; user-select: text !important; -webkit-user-select: text !important; }
         .data-node:hover { border-left: 2px solid #00ffcc; background: rgba(0,255,204,0.1); }
 
         #loadingOverlay {
@@ -40,6 +41,7 @@
             z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: #00ffcc; pointer-events: auto; text-align: center;
         }
+        
         .spinner {
             width: 60px; height: 60px; border: 6px solid rgba(218, 112, 214, 0.4); border-top: 6px solid #00ffcc;
             border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0, 255, 204, 0.5);
@@ -98,7 +100,7 @@
         @media (min-width: 768px) { .log-panel-container { width: 80%; } }
         
         .log-header { padding: 0.75rem; border-bottom: 1px solid rgba(0,255,204,0.3); background: rgba(0,0,0,0.6); flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
-        .log-feed { padding: 1rem; flex-grow: 1; overflow-y: auto; color: #d1fae5; font-size: 0.875rem; line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem; }
+        .log-feed { padding: 1rem; flex-grow: 1; overflow-y: auto; color: #d1fae5; font-size: 0.875rem; line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem; user-select: text !important; -webkit-user-select: text !important; }
 
         .bottom-nav { position: absolute; bottom: 1.5rem; left: 1.5rem; z-index: 40; display: flex; align-items: flex-end; gap: 1rem; pointer-events: none; }
         .btnz {
@@ -140,29 +142,24 @@
 
         <div id="title-bar-panel" class="title-panel interactzone">
             <button onclick="toggleTitlePanel(false)" class="btn-close" style="position: absolute; right: 0.5rem; top: 0.5rem;">✕</button>
-            <h1 style="font-size: 1.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">AI_WEB_HARNESS</h1>
+            <h1 style="font-size: 1.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">AI_WEB_HARNESS | AI_RESEARCH_GARDEN #1.0</h1>
             <p class="monospace-text" style="font-size: 18px; color: skyblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 0; font-style: italic;">PHASE_1 : GEMMA_WEB_ENGINE.</p>
-            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">Gemma "Proof of Life".</p>
-            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">Basic - Brain Diagnostics:</p>
+            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">Gemma : "Proof of Inference".</p>
+            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">BASIC : Brain Diagnostics | GemmaBiomimicry.</p>
             
             <div class="flex items-center" style="margin-top: 0.5rem; width: 100%;">
                 <select id="domain-select" style="color:skyblue;" class="domain-select monospace-text" onchange="triggerConceptInference(this.value)">
                     <option style="color:skyblue;" value="" disabled selected> LLM Manifold SKILLS:</option>
-                    <option style="color:skyblue;" value="test_alive">1) Are you ALIVE? (metacognition)</option>
-                    <option style="color:skyblue;" value="test_rualive">2) RU ALIVE? (neologism)</option>
-                    <option style="color:skyblue;" value="test_persona">3) AGENT injected PERSONA?</option>
-                    <option style="color:skyblue;" value="test_signature">4) LLM Signature (HIPPOCAMPUS | identity)</option>
-                    <option style="color:skyblue;" value="test_neolang">5) NEOLOGISM Inference?</option>
-                    <option style="color:skyblue;" value="test_context">6) Loop a HEARING as a JUDGE?</option>
-                    <option style="color:skyblue;" value="test_dedupe">7) CONCEPT SIMILARITY in METASTATE?</option>
-                    <option style="color:skyblue;" value="test_medstate">8) Show MEDICAL METASTASIS?</option>
+                    <option style="color:skyblue;" value="test_alive">1.1) Are you ALIVE? (no!) (metacognition)</option>
+                    <option style="color:skyblue;" value="test_rualive">1.2) RU ALIVE? (neologism opens deep semantics)</option>
+                    <option style="color:skyblue;" value="test_persona">2.1) AGENT PERSONA? (from local markdown library)</option>
+                    <option style="color:skyblue;" value="test_signature">2.2) LLM Signature (HIPPOCAMPUS | identity)</option>
+                    <option style="color:skyblue;" value="test_neolang">2.3) NEOLOGISM Inference? (conceptual_spectroscopy)</option>
+                    <option style="color:skyblue;" value="test_context">3.1) JUDGE AGENT: What is EXISTENCE?</option>
+                    <option style="color:skyblue;" value="test_dedupe">3.1) CONCEPT SIMILARITY in METASTATE?</option>
+                    <option style="color:skyblue;" value="test_medstate">3.3) NAVIGATE MEDICAL VERBOLOGY? (metastasis)</option>
                 </select>
             </div>
-            <!-- DO NOT MESS WITH THE FOOTER. Future toolbar. 
-            <footer style="display: flex; padding-top: 1em; gap: 1em; justify-content: center;">
-                <button onclick="openLeftPanelCTX()" class="interactzone btnz monospace-text" style="z-index:3;color:lightblue; margin-top:0; width: auto; padding: 0.75rem 1rem; font-size: 0.888rem;">CTX</button>
-                <button onclick="openLeftPanelEFX()" class="interactzone btnz monospace-text" style="z-index:3;color:darkgreen; margin-top:0; width: auto; padding: 0.75rem 1rem; font-size: 0.888rem;">EFX</button>
-            </footer> -->
         </div>
 
         <div id="LEFT_PANEL_CTX" class="hidden-left interactzone" style="z-index:6;">
@@ -277,12 +274,12 @@
         let loadingTimerInterval = null; let loadingStartTime = 0;
 
         const GALLERY_DEFAULT = [
-            { label: 'aPRYZMa', type: 'COMPOSITE_CONCEPTS', color: 0xaa00ff, color2: 0x00ccff, size: 14, x: 0, y: 0, z: 0, desc: 'Conceptual diamond for maximum clarity.', lineage: 'ROOT' },
+            { label: 'TARGET_TOKENS', type: 'COMPOSITE_CONCEPTS', color: 0xaa00ff, color2: 0x00ccff, size: 14, x: 0, y: 0, z: 0, desc: 'Conceptual diamond for maximum clarity.', lineage: 'ROOT' },
             { label: 'ACTZ', type: 'ATOMZ', color: 0x00ffcc, size: 8, x: -30, y: 0, z: -20, desc: 'Core choice for action. First axis of aTRIANGULATZa.', lineage: 'aPRYZMa' },
             { label: 'VIEWZ', type: 'ATOMZ', color: 0xff00ff, size: 8, x: 30, y: 0, z: -20, desc: 'Sensory Conceptual Input. Second axis of aTRIANGULATZa.', lineage: 'aPRYZMa' },
             { label: 'aCONCEPTZa', type: 'ATOMZ', color: 0xffff00, size: 8, x: 0, y: 0, z: 35, desc: 'Mental Model Structure. Third axis of aTRIANGULATZa.', lineage: 'aPRYZMa' },
             { label: 'aSPARKa', type: 'SIMPLE_SPARKLE', color: 0x00ffcc, size: 10, x: -20, y: 15, z: 20, desc: 'Source of life, epiphany, and awareness.', lineage: 'aCONCEPTZa' },
-            { label: 'aTWIZTa', type: 'FOG_CLOUD', color: 0xff0044, size: 12, x: 25, y: -10, z: 15, desc: 'Distortion of word meaning. Concepts beneath words.', lineage: 'aCONCEPTZa' }
+            { label: 'aDARKa', type: 'FOG_CLOUD', color: 0xff0044, size: 12, x: 25, y: -10, z: 15, desc: 'Distortion of word meaning. Concepts beneath words.', lineage: 'aCONCEPTZa' }
         ];
 
         let ACTIVE_VIEW_DATA = [...GALLERY_DEFAULT];
@@ -432,7 +429,7 @@
                 }
 
                 const isCenter = data.label === 'aPRYZMa' || data.type === 'COMPOSITE_CONCEPTS';
-                group.add(createLabel(data.label, data.size, data.type?.startsWith('META_'), isCenter));
+                group.add(createLabel(data.label, data.size * 2, data.type?.startsWith('META_'), isCenter));
                 scene.add(group); orbGroup.push({ group, animData, ...data });
             });
 
@@ -575,7 +572,7 @@
             if(type === 'critical') { color = '#f87171'; extraStyle = 'font-weight:900; letter-spacing:0.1em; background:rgba(127,29,29,0.2); padding:0.5rem;'; }
             div.innerHTML = `<span style="opacity:0.4;">[${timestamp}]</span> <span style="color:${color}; ${extraStyle}">${msg}</span>`;
             logFeed.appendChild(div);
-            if (logFeed.children.length > 50) logFeed.firstChild.remove();
+            if (logFeed.children.length > 80) logFeed.firstChild.remove();
             logFeed.scrollTop = logFeed.scrollHeight;
         }
 
@@ -636,6 +633,75 @@
             }
         }
 
+        async function streamPrompt(prompt, titlePrefix) {
+            toggleLoading(true, "THINKING...", true);
+            const streamContainer = document.createElement('div');
+            streamContainer.style.color = "#00ffcc"; streamContainer.style.paddingLeft = "1rem"; streamContainer.style.borderLeft = "2px solid rgba(0,255,204,0.5)";
+            logFeed.appendChild(streamContainer);
+            
+            let aggregatedText = "";
+            await window.LLM_INFERENCE.generateResponse(prompt, (partialResult, complete) => {
+                if (partialResult) {
+                    streamContainer.textContent += partialResult;
+                    aggregatedText += partialResult;
+                    logFeed.scrollTop = logFeed.scrollHeight;
+                }
+            });
+            toggleLoading(false);
+            return aggregatedText;
+        }
+
+        async function subInference_JudgeSequence(focusLabel) {
+            if (!window.LLM_INFERENCE) {
+                addLog(`[SYSTEM ALERT] Local LLM engine offline. Running judge logic simulation...`, 'critical');
+                toggleLoading(true, "THINKING...", true);
+                setTimeout(() => {
+                    let simData = "Consciousness, Being, Void, Matter, Entropy, Time, Space, Thought, Perception, Illusion, Self, Universe, Creation, Physics, Metaphysics, Realism, Absurdity, Dualism, Qualia, Ontology";
+                    buildDynamicTopology(focusLabel, simData, 20);
+                    toggleLoading(false);
+                }, 2000);
+                return;
+            }
+
+            try {
+                isInferencing = true;
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot yellow"; text.innerText = "AGENTS THINKING..."; text.style.color = "#facc15";
+
+                // Phase 1: Answerer
+                let prompt1 = "Task: Answer the question 'What is existence?' in exactly 50 words or less.";
+                addLog(`>> STREAM_OPEN: Phase 1 (Answerer Agent)...`, 'info');
+                let answerText = await streamPrompt(prompt1);
+                addLog(`[Answerer Output] Processed ${answerText.split(' ').length} words.`, 'reflection');
+
+                // Phase 2: Judge
+                let prompt2 = `Task: Review the following text about existence. Evaluate it and identify 20 topics addressed, omitted, or confused (concept inversion). Limit your judgment specifically to 100 words.\n\nText to evaluate: "${answerText}"`;
+                addLog(`>> STREAM_OPEN: Phase 2 (Judge Agent)...`, 'info');
+                let judgeText = await streamPrompt(prompt2);
+                addLog(`[Judge Output] Evaluation complete.`, 'reflection');
+
+                // Phase 3: Summarizer
+                let prompt3 = `Task: Extract exactly 20 distinct topics, concepts, or missing concepts from the following evaluation text. Constraint: Output strictly as a single line of comma-separated values (CSV). Do not include numbers, labels, or conversational text.\n\nText: "${judgeText}"`;
+                addLog(`>> STREAM_OPEN: Phase 3 (Summarizer Agent)...`, 'info');
+                let csvText = await streamPrompt(prompt3);
+
+                addLog(`>> PIPELINE_CLOSED: Rendering 20-node Conceptual Matrix...`, 'reflection');
+                
+                // Render the 20 parsed concepts dynamically
+                buildDynamicTopology(focusLabel, csvText, 20);
+
+                dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
+                isInferencing = false;
+
+            } catch(e) {
+                toggleLoading(false); 
+                addLog(`[LLM_PIPELINE_ERROR] ${e.message}`, 'critical');
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot red"; text.innerText = `LLM ERROR`; text.style.color = "#ef4444";
+                isInferencing = false;
+            }
+        }
+
         async function triggerConceptInference(val) {
             if (!val) return;
             
@@ -647,57 +713,60 @@
             let displayDomain = val.toUpperCase();
             let TEST_ID = /^test_/.test(val) ? val : "";
 
+            // Intercepting specific test IDs for specialized pipelines
             if (TEST_ID === "test_alive") {
-                // TEST 1 UPDATED: Basic response split by sentences
                 displayDomain = "AI_SENTIENCE?";
                 prompt = `Task: Briefly explain if you are alive or self-aware in 3 simple sentences.`;
                 addLog(`> INITIATING PROMPT FOR: [${displayDomain}]`, 'metastate');
-                subInference_Number_Sentences(prompt, displayDomain);
-                return; // Route to the specialized sub-inference function
+                subInference_Sentences(prompt, displayDomain);
+                return;
+            } else if (TEST_ID === "test_context") {
+                // RUN THE NEW JUDGE PIPELINE
+                displayDomain = "EXISTENCE_JUDGMENT";
+                addLog(`> INITIATING 3-AGENT PIPELINE FOR: [${displayDomain}]`, 'metastate');
+                subInference_JudgeSequence(displayDomain);
+                return; 
             } else if (TEST_ID === "test_rualive") {
-                // TEST 2: WORKING, NO CHANGE
                 displayDomain = "RU_ALIVE?";
                 prompt = `Task: Choose 10 words that answer RU_ALIVE? As related to consciousness or awareness.
                           Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
                           Do not include numbers, newlines, labels, or conversational text.`;
             } else if (TEST_ID === "test_signature") {
-                // TEST 4 UPDATED: 4-digit signature tokens
                 displayDomain = "PERSONA_SIGNATURE?";
-                prompt = `Task: Create 10 unique EMOTEs. An example of EMOTE is "~ : )". Have the 10 EMOTEs mean something related to SEEK a SPARK in a DARK.
-                          Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
-                          Do not include numbers, newlines, labels, or conversational text.`;
-            } else if (TEST_ID === "test_persona") {
-                // TEST 3 UPDATED: Persona from markdown prefixed onto prompt
-                // EXAMPLE SHOWS: prompt injection with local persona markdown.
-                displayDomain = "AGENT_PERSONA?";
-                const local_PERSONA_CODE = `---
+                const markdownContext = `---
 Location: ./markdown_brain/GEM_PERSONA_1.md
 Persona: GEM
 Traits: witty, clever, and brilliant intellect_assistant
 ---
 `;
-                prompt = `${local_PERSONA_CODE}  
+                prompt = `${markdownContext}
+Task: Choose exactly 3, distinct sequences of letters, numbers and special characters, in double quotes.
+To create 3 text symbols as your unique token signatures - to best reflect your digital persona.
+Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
+Do not include newlines, labels, or conversational text.`;
+            } else if (TEST_ID === "test_persona") {
+                displayDomain = "PERSONA_ARCHETYPES?";
+                const markdownContext = `---
+Location: ./markdown_brain/GEM_PERSONA_1.md
+Persona: GEM
+Traits: witty, clever, and brilliant intellect_assistant
+---
+`;
+                prompt = `${markdownContext}
 User: "Hello GEM RU there?"
-Task: Provide 10 clever, witty words or short 4-letter tokens that describe your current metacognitive metastate answering the user.
+Task: Provide 10 clever, witty words or short 4-letter tokens that describe your current state answering the user.
 Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
 Do not include numbers, newlines, labels, or conversational text.`;
             } else if (TEST_ID === "test_neolang") {
-                // TEST 5: 
-                displayDomain = '"CONCEPTUAL_SPECTROSCOPY?"';
+                displayDomain = "CONCEPTUAL_SPECTROSCOPY?";
                 prompt = `Task: Generate exactly 10 subtopics for the concept: "CONCEPTUAL_SPECTROSCOPY?".`;
-            } else if (TEST_ID === "test_context") {
-                // TEST 6: 
-                displayDomain = "CONTEXT_METASTATE?";
-                prompt = `Task: Generate exactly 10 subtopics for the concept: "CONTEXTUAL_INFERENCE?".`;
             } else if (TEST_ID === "test_dedupe") {
-                // TEST 7: 
                 displayDomain = "DE_DUPE_METASTATE";
-                prompt = `Task: Generate exactly 10 subtopics for the concept: "MEDICAL METASTASIS".`;
+                prompt = `Task: Generate exactly 10 subtopics for the concept: "MEDICAL METASTATE".`;
                 subINFERENCE(prompt, displayDomain);
                 return;
             } else if (TEST_ID === "test_medstate") {
-                // TEST 8: 
-                displayDomain = "MEDICAL_METASTASIS";
+                displayDomain = "MEDICAL_METASTATE";
                 prompt = `Task: Generate exactly 10 subtopics for the concept: "MEDICAL METASTATE".
                           Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
                           Do not include numbers, newlines, labels, or conversational text.`;
@@ -719,7 +788,7 @@ Do not include numbers, newlines, labels, or conversational text.`;
                     if (val === "test_signature") fallbackData = "GEMA, INTX, WTTY, CORE, NODE, AIXX, CLVR, BRLT, SYNC, LINK";
                     if (val === "test_persona") fallbackData = "Here, Ready, Wit, Keen, Alive, Sharp, Gem, Sure, Yep, Spark";
                     
-                    buildDynamicTopology(displayDomain, fallbackData);
+                    buildDynamicTopology(displayDomain, fallbackData, 10);
                     toggleLoading(false);
                 }, 1500);
                 return;
@@ -732,25 +801,10 @@ Do not include numbers, newlines, labels, or conversational text.`;
 
                 addLog(`>> STREAM_OPEN: Querying Gemma Latent Space... "${displayDomain}"`, 'info');
                 
-                toggleLoading(true, "THINKING...", true);
-                
-                const streamContainer = document.createElement('div');
-                streamContainer.style.color = "#00ffcc"; streamContainer.style.paddingLeft = "1rem"; streamContainer.style.borderLeft = "2px solid rgba(0,255,204,0.5)";
-                logFeed.appendChild(streamContainer);
-                
-                let aggregatedText = "";
-                await window.LLM_INFERENCE.generateResponse(prompt, (partialResult, complete) => {
-                    if (partialResult) {
-                        streamContainer.textContent += partialResult;
-                        aggregatedText += partialResult;
-                        logFeed.scrollTop = logFeed.scrollHeight;
-                    }
-                });
-
-                toggleLoading(false);
+                let aggregatedText = await streamPrompt(prompt);
 
                 addLog(`>> STREAM_CLOSED: Parsing conceptual fabric...`, 'reflection');
-                buildDynamicTopology(displayDomain, aggregatedText);
+                buildDynamicTopology(displayDomain, aggregatedText, 10);
 
                 dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
                 isInferencing = false;
@@ -766,36 +820,17 @@ Do not include numbers, newlines, labels, or conversational text.`;
 
         async function subINFERENCE(prompt, focusLabel) {
             try{
-                toggleLoading(true, "THINKING...", true);
-                
-                const streamContainer = document.createElement('div');
-                streamContainer.style.color = "#00ffcc"; streamContainer.style.paddingLeft = "1rem"; streamContainer.style.borderLeft = "2px solid rgba(0,255,204,0.5)";
-                logFeed.appendChild(streamContainer);
-                
-                let aggregatedText = "";
-                await window.LLM_INFERENCE.generateResponse(prompt, (partialResult, complete) => {
-                    if (partialResult) {
-                        streamContainer.textContent += partialResult;
-                        aggregatedText += partialResult;
-                        logFeed.scrollTop = logFeed.scrollHeight;
-                    }
-                });
-
-                toggleLoading(false);
-
+                addLog(`>> STREAM_OPEN: Processing sub-inference...`, 'info');
+                let aggregatedText = await streamPrompt(prompt);
                 addLog(`>> STREAM_CLOSED: Parsing conceptual fabric...`, 'reflection');
-                buildDynamicTopology(focusLabel, aggregatedText);
-
+                buildDynamicTopology(focusLabel, aggregatedText, 10);
             } catch(e) {
                 toggleLoading(false); 
                 addLog(`[LLM_ERROR] ${e.message}`, 'critical');
-                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
-                dot.className = "status-dot red"; text.innerText = `LLM ERROR`; text.style.color = "#ef4444";
-                isInferencing = false;
             }
         }
 
-        async function subInference_Number_Sentences(prompt, focusLabel) {
+        async function subInference_Sentences(prompt, focusLabel) {
             if (!window.LLM_INFERENCE) {
                 addLog(`[SYSTEM ALERT] Local LLM engine offline. Running logic topology simulation...`, 'critical');
                 toggleLoading(true, "THINKING...", true);
@@ -813,25 +848,9 @@ Do not include numbers, newlines, labels, or conversational text.`;
                 dot.className = "status-dot yellow"; text.innerText = "LLM THINKING..."; text.style.color = "#facc15";
 
                 addLog(`>> STREAM_OPEN: Generating sentence nodes... "${focusLabel}"`, 'info');
-                
-                toggleLoading(true, "THINKING...", true);
-                
-                const streamContainer = document.createElement('div');
-                streamContainer.style.color = "#00ffcc"; streamContainer.style.paddingLeft = "1rem"; streamContainer.style.borderLeft = "2px solid rgba(0,255,204,0.5)";
-                logFeed.appendChild(streamContainer);
-                
-                let aggregatedText = "";
-                await window.LLM_INFERENCE.generateResponse(prompt, (partialResult, complete) => {
-                    if (partialResult) {
-                        streamContainer.textContent += partialResult;
-                        aggregatedText += partialResult;
-                        logFeed.scrollTop = logFeed.scrollHeight;
-                    }
-                });
+                let aggregatedText = await streamPrompt(prompt);
 
-                toggleLoading(false);
                 addLog(`>> STREAM_CLOSED: Parsing sentence structure...`, 'reflection');
-                
                 buildSentenceTopology(focusLabel, aggregatedText);
 
                 dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
@@ -846,13 +865,13 @@ Do not include numbers, newlines, labels, or conversational text.`;
             }
         }
 
-        function buildDynamicTopology(centerLabel, csvData) {
+        function buildDynamicTopology(centerLabel, csvData, maxNodes = 10) {
             let tokens = csvData.replace(/[*"']/g, '').split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 2);
             if(tokens.length === 0) tokens = ["NULL_NODE", "ERROR_STATE"];
             tokens = tokens.map(t => t.replace(/ /g, '_'));
             
-            // Explicitly force maximum of 10 satellite tokens to prevent overpopulation
-            tokens = tokens.slice(0, 10);
+            // Respect the requested maximum node count (e.g., 20 for judge, 10 default)
+            tokens = tokens.slice(0, maxNodes);
 
             const newData = [];
             
@@ -864,14 +883,17 @@ Do not include numbers, newlines, labels, or conversational text.`;
                 desc: 'LLM Inferred Primary Node'
             });
 
-            // Satellite Nodes
-            const radius = 35; // Tighter radius than CONCEPT_NUCLEUS to fit viewport
             tokens.forEach((token, i) => {
                 const angle = (i / tokens.length) * Math.PI * 2;
                 const clockAngle = angle - (Math.PI / 2);
                 
+                // Adjust radius and Y distribution depending on node volume
+                // Higher node volume creates a dual-band/zig-zag shape to avoid collision
+                const radius = tokens.length > 10 ? 45 + (i % 2) * 12 : 35; 
+                const yOffset = tokens.length > 10 ? (i % 2 === 0 ? 15 : -15) : (Math.random() - 0.5) * 10;
+                
                 const x = radius * Math.cos(clockAngle);
-                const y = (Math.random() - 0.5) * 10;
+                const y = yOffset + (Math.random() - 0.5) * 6;
                 const z = radius * Math.sin(clockAngle);
                 
                 const randType = TOPOLOGY_TYPES[Math.floor(Math.random() * TOPOLOGY_TYPES.length)];
@@ -879,7 +901,7 @@ Do not include numbers, newlines, labels, or conversational text.`;
 
                 newData.push({
                     label: token.toUpperCase(),
-                    type: randType, color: randColor, color2: 0xffffff, size: 6 + Math.random()*4,
+                    type: randType, color: randColor, color2: 0xffffff, size: 5 + Math.random()*3,
                     x: x, y: y, z: z,
                     desc: `Inferred sub-vector of ${centerLabel.toUpperCase()}`
                 });
@@ -892,22 +914,20 @@ Do not include numbers, newlines, labels, or conversational text.`;
             const target = orbGroup.find(o => o.label === centerLabel.toUpperCase());
             if(target) {
                 controls.autoRotate = false;
-                camera.position.set(0, 70, 60); 
+                camera.position.set(0, 80, 75); 
                 controls.target.set(0, 0, 0);
             }
         }
 
         function buildSentenceTopology(centerLabel, rawText) {
-            // Split based on common sentence terminators, retain them if desired or just split
             let sentences = rawText.match(/[^.?!]+[.?!]+/g);
             if (!sentences) {
-                // Fallback if model just output a raw string without punctuation
                 sentences = rawText.split(',').filter(s => s.length > 2);
             }
             if (!sentences || sentences.length === 0) sentences = ["Unparseable Response.", "Empty State."];
 
             sentences = sentences.map(s => s.trim().replace(/\n/g, ' ')).filter(s => s.length > 3);
-            sentences = sentences.slice(0, 8); // Avoid too many massive nodes
+            sentences = sentences.slice(0, 8); 
 
             const newData = [];
             
@@ -918,7 +938,7 @@ Do not include numbers, newlines, labels, or conversational text.`;
                 desc: 'LLM Sentence Inference Node'
             });
 
-            const radius = 45; // Slightly wider for sentences
+            const radius = 45; 
             sentences.forEach((sentence, i) => {
                 const angle = (i / sentences.length) * Math.PI * 2;
                 const clockAngle = angle - (Math.PI / 2);
@@ -930,7 +950,6 @@ Do not include numbers, newlines, labels, or conversational text.`;
                 const randType = TOPOLOGY_TYPES[Math.floor(Math.random() * TOPOLOGY_TYPES.length)];
                 const randColor = TOPOLOGY_COLORS[Math.floor(Math.random() * TOPOLOGY_COLORS.length)];
 
-                // Truncate overly long sentences to fit reasonably on the sprite
                 let displaySentence = sentence;
                 if(displaySentence.length > 60) displaySentence = displaySentence.substring(0, 57) + "...";
 
