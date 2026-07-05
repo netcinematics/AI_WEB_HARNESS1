@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000b0b">
+    <link rel="manifest" href="./manifest.json">
+    <title>AI_WEB_HARNESS | Gemma Web Engine</title>
+    
+    <script src="./src/three.min.js"></script>
+    <script src="./src/OrbitControls.js"></script>    
+    
+    <style>
+        body { margin: 0; background: #000b0b; color: #00ffcc; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; width: 100vw; height: 100vh; user-select: text; -webkit-user-select: text; }
+        * { box-sizing: border-box; user-select: text; -webkit-user-select: text; }
+        button { user-select: none; -webkit-user-select: none; }
+        
+        .monospace-text { font-family: 'Courier New', Courier, monospace; }
+
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        
+        .interactzone { pointer-events: auto; background: rgba(0, 15, 20, 0.85); border: 1px solid rgba(0, 255, 204, 0.3); backdrop-filter: blur(12px); border-radius: 8px; }
+        
+        .tellecto-scrollbar::-webkit-scrollbar { width: 6px; }
+        .tellecto-scrollbar::-webkit-scrollbar-track { background: rgba(0, 40, 40, 0.5); }
+        .tellecto-scrollbar::-webkit-scrollbar-thumb { background: #ff00ff; border-radius: 3px; }
+
+        #overlay-vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.9) 100%);
+            pointer-events: none; z-index: 2;
+        }
+
+        .output-panel { transform: translate(-50%, 0); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s; }
+        .output-panel.hidden-bottom { transform: translate(-50%, 120%); opacity: 0; pointer-events: none; }
+
+        .data-node { border-left: 2px solid transparent; padding-left: 12px; margin-bottom: 6px; padding-top: 4px; padding-bottom: 4px; transition: all 0.2s; user-select: text !important; -webkit-user-select: text !important; }
+        .data-node:hover { border-left: 2px solid #00ffcc; background: rgba(0,255,204,0.1); }
+
+        #loadingOverlay {
+            position: absolute; inset: 0; background: rgba(5, 5, 5, 0.8); backdrop-filter: blur(10px);
+            z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #00ffcc; pointer-events: auto; text-align: center;
+        }
+        
+        .spinner {
+            width: 60px; height: 60px; border: 6px solid rgba(218, 112, 214, 0.4); border-top: 6px solid #00ffcc;
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0, 255, 204, 0.5);
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 10px #00ffcc; animation: pulse 1.5s infinite; text-transform: uppercase; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        #DETAILS_PANEL { position: absolute; top: 220px; right: 24px; width: 300px; z-index: 60; border-top: 2px solid #ff00ff; transition: opacity 0.3s, transform 0.3s; padding: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 0.5rem; }
+        #DETAILS_PANEL.hidden-right { opacity: 0; pointer-events: none; transform: translateX(50px); }
+        .glow-text { text-shadow: 0 0 12px rgba(255, 0, 255, 0.8); }
+
+        #LEFT_PANEL_CTX { position: absolute; top: 24rem; left: 3rem; width: 260px; z-index: 60; border-top: 2px solid #ff00ff; transition: opacity 0.3s, transform 0.3s; padding: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 0.5rem; }
+        #LEFT_PANEL_CTX.hidden-left { opacity: 0; pointer-events: none; transform: translateX(-50px); }
+        #LEFT_PANEL_EFX { position: absolute; top: 28rem; left: 3rem; width: 260px; z-index: 60; border-top: 2px solid #ff00ff; transition: opacity 0.3s, transform 0.3s; padding: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 0.5rem; }
+        #LEFT_PANEL_EFX.hidden-left { opacity: 0; pointer-events: none; transform: translateX(-50px); }
+
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        .btn-close { color: firebrick; font-weight: bold; font-size: 1.25rem; background: none; border: none; cursor: pointer; transition: color 0.2s; padding: 0 0.5rem; }
+        .btn-close:hover { color: dodgerblue; }
+        .btn-close-red { color: firebrick; position: absolute; top: 1rem; right: 1.5rem; font-size: 1.875rem; z-index: 105; pointer-events: auto; background: none; border: none; cursor: pointer; font-weight: bold; transition: color 0.2s; }
+        .btn-close-red:hover { color: dodgerblue; }
+
+        .title-panel {
+            position: absolute; top: 1.5rem; left: 1.5rem; 
+            padding: 1.25rem; border-left: 4px solid #ff00ff;
+            width: 77%; transition: all 0.3s; display: flex; flex-direction: column; gap: 0.25rem;
+        }
+        @media (min-width: 768px) { .title-panel { width: 55%; } }
+
+        .domain-select {
+            background: rgba(0,0,0,0.8); border: 1px solid rgba(0,255,204,0.5); padding: 0.5rem; font-size: 0.875rem;
+            font-weight: bold; width: 100%; outline: none; color: #00ffcc; border-radius: 0.25rem; transition: border-color 0.2s;
+            text-transform: uppercase; letter-spacing: 0.1em; pointer-events: auto; cursor: pointer;
+        }
+        @media (min-width: 768px) { .domain-select { font-size: 1rem; } }
+        .domain-select:focus { border-color: #ff00ff; }
+
+        .btn-concept {
+            margin-top: 1rem; width: 100%; border: 1px solid #ff00ff; background: rgba(0,0,0,0.5); padding: 0.5rem;
+            color: #ff00ff; transition: all 0.2s; text-transform: uppercase; font-weight: 900; letter-spacing: 0.1em;
+            border-radius: 0.25rem; box-shadow: 0 0 10px rgba(255,0,255,0.2); cursor: pointer;
+        }
+        .btn-concept:hover { background: #ff00ff; color: #000; }
+
+        .log-panel-container {
+            position: absolute; bottom: 6rem; left: 50%; width: 90%; max-width: 64rem; height: 35vh;
+            border-top: 2px solid #ff00ff; z-index: 50; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            display: flex; flex-direction: column;
+        }
+        @media (min-width: 768px) { .log-panel-container { width: 80%; } }
+        
+        .log-header { padding: 0.75rem; border-bottom: 1px solid rgba(0,255,204,0.3); background: rgba(0,0,0,0.6); flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+        .log-feed { padding: 1rem; flex-grow: 1; overflow-y: auto; color: #d1fae5; font-size: 0.875rem; line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem; user-select: text !important; -webkit-user-select: text !important; }
+
+        .bottom-nav { position: absolute; bottom: 1.5rem; left: 1.5rem; z-index: 40; display: flex; align-items: flex-end; gap: 1rem; pointer-events: none; }
+        .btnz {
+            padding: 0.5rem 1rem; display: flex; align-items: center; gap: 1.5rem; pointer-events: auto;
+            border-radius: 9999px; border: 1px solid rgba(255,0,255,0.5); transition: background-color 0.2s; cursor: pointer;
+            color: #ff00ff; font-weight: bold; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .btnz:hover { background-color: rgba(255,0,255,0.2); color: #fff; }
+        
+        .status-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; }
+        .status-dot.red { background-color: #ef4444; }
+        .status-dot.green { background-color: #00ffcc; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .status-dot.yellow { background-color: #facc15; animation: pulse 1s infinite; }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingOverlayText">INITIALIZING AXI...</div>
+        <div id="loadingTimer" style="margin-top: 1rem; color: #34d399; font-family: monospace; font-size: 1.125rem; font-weight: bold; text-align: center;">
+            0.0s<br><span style="font-size: 0.75rem; color: #00ffcc; margin-top: 0.5rem; display: block;">Loading Local Brains (WebGPU)...</span>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+    <div id="overlay-vignette"></div>
+
+    <div class="ui-layer">
+        <div id="install-btn-container" style="display: none; position: absolute; top: 1.5rem; right: 4rem; z-index: 100;">
+            <button id="install-btn" class="interactzone btn-concept monospace-text" style="margin-top:0; padding: 0.5rem 1rem; color: #00ffcc; border-color: #00ffcc; font-size: 0.875rem;">INSTALL PWA</button>
+        </div>
+        <button id="loadingCloseBtn" onclick="forceCloseLoading()" class="btn-close-red" title="Bypass Loading">✕</button>
+
+        <div class="interactzone flex items-center" style="position: absolute; top: 4.5rem; right: 1.5rem; z-index: 60; padding: 0.5rem 1rem; gap: 0.5rem;">
+            <div id="llmStatusDot" class="status-dot red"></div>
+            <span id="llmStatus" style="font-size: 10px; font-weight: bold; letter-spacing: 0.2em; color: #ef4444; text-transform: uppercase;">LLM LOADING</span>
+        </div>
+
+        <div id="projectz-btn-container" style="display: none; position: absolute; top: 1.5rem; left: 1.5rem; z-index: 50;">
+            <button onclick="toggleTitlePanel(true)" class="btn-concept interactzone btnz monospace-text" style="margin-top:0; padding: 0.75rem 1.5rem; font-size: 1rem;">PROJECTZ</button>
+        </div>
+
+        <div id="title-bar-panel" class="title-panel interactzone">
+            <button onclick="toggleTitlePanel(false)" class="btn-close" style="position: absolute; right: 0.5rem; top: 0.5rem;">✕</button>
+            <h1 style="font-size: 1.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">AI_WEB_HARNESS | AI_RESEARCH_GARDEN #1.0</h1>
+            <p class="monospace-text" style="font-size: 18px; color: skyblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 0; font-style: italic;">PHASE_1 : GEMMA_WEB_ENGINE.</p>
+            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">Gemma : "Proof of Inference".</p>
+            <p class="monospace-text" style="font-size: 18px; color: steelblue; letter-spacing: 0.1em; margin: 1em 0 0.5rem 1em;">BASIC : Brain Diagnostics | GemmaBiomimicry.</p>
+            
+            <div class="flex items-center" style="margin-top: 0.5rem; width: 100%;">
+                <select id="domain-select" style="color:skyblue;" class="domain-select monospace-text" onchange="triggerConceptInference(this.value)">
+                    <option style="color:skyblue;" value="" disabled selected> LLM Manifold SKILLS:</option>
+                    <option style="color:skyblue;" value="test_alive">1.1) Are you ALIVE? (no!) (metacognition)</option>
+                    <option style="color:skyblue;" value="test_rualive">1.2) RU ALIVE? (neologism opens deep semantics)</option>
+                    <option style="color:skyblue;" value="test_persona">2.1) AGENT PERSONA? (from local markdown library)</option>
+                    <option style="color:skyblue;" value="test_signature">2.2) LLM Signature (HIPPOCAMPUS | identity)</option>
+                    <option style="color:skyblue;" value="test_neolang">3.1) NEOLOGISM Inference? (conceptual_spectroscopy)</option>
+                    <option style="color:skyblue;" value="test_context">3.2) JUDGE AGENT: What is EXISTENCE?</option>
+                    <option style="color:skyblue;" value="test_medstate">3.3) NAVIGATE MEDICAL VERBOLOGY? (metastasis)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="LEFT_PANEL_CTX" class="hidden-left interactzone" style="z-index:6;">
+            <div class="flex justify-between items-center" style="border-bottom: 1px solid rgba(255,0,255,0.3); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                <h3 class="glow-text monospace-text" style="color: lightblue; font-weight: 900; text-transform: uppercase; font-size: 1.125rem; letter-spacing: 0.1em; margin: 0;">CTX</h3>
+                <button onclick="closeLeftPanelCTX()" class="btn-close">✕</button>
+            </div>
+            <div style="display: flex; gap: 2rem; color: #00ffcc; font-weight: bold; margin-top: 0.5rem;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" style="width: 1rem; height: 1rem; accent-color: #ff00ff;"> A
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" style="width: 1rem; height: 1rem; accent-color: #ff00ff;"> B
+                </label>
+            </div>
+        </div>
+        
+        <div id="LEFT_PANEL_EFX" class="hidden-left interactzone" style="z-index:7;">
+            <div class="flex justify-between items-center" style="border-bottom: 1px solid rgba(255,0,255,0.3); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                <h3 class="glow-text monospace-text" style="color: darkgreen; font-weight: 900; text-transform: uppercase; font-size: 1.125rem; letter-spacing: 0.1em; margin: 0;">EFX</h3>
+                <button onclick="closeLeftPanelEFX()" class="btn-close">✕</button>
+            </div>
+            <div style="display: flex; gap: 2rem; color: #00ffcc; font-weight: bold; margin-top: 0.5rem;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" style="width: 1rem; height: 1rem; accent-color: #ff00ff;"> A
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" style="width: 1rem; height: 1rem; accent-color: #ff00ff;"> B
+                </label>
+            </div>
+        </div>
+
+        <div id="DETAILS_PANEL" class="hidden-right interactzone">
+            <div class="flex justify-between items-center" style="border-bottom: 1px solid rgba(255,0,255,0.3); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                <h3 id="infoTitle" class="glow-text monospace-text" style="color: #ff00ff; font-weight: 900; text-transform: uppercase; font-size: 1.125rem; letter-spacing: 0.1em; margin: 0;">NODE</h3>
+                <button onclick="closeDetails()" class="btn-close">✕</button>
+            </div>
+            <p id="infoContent" class="monospace-text" style="font-size: 0.875rem; color: #00ffcc; line-height: 1.625; font-style: italic; margin-bottom: 0.5rem;"></p>
+            <div class="monospace-text" style="display: grid; grid-template-columns: 1fr; gap: 0.25rem; font-size: 0.75rem; border-top: 1px solid rgba(0,255,204,0.3); padding-top: 0.5rem;">
+                <div class="flex justify-between"><span style="color: #047857;">VECTOR:</span> <span id="infoMetaType" style="color: #ff00ff; font-weight: bold; text-transform: uppercase;"></span></div>
+                <div class="flex justify-between"><span style="color: #047857;">LINEAGE:</span> <span id="infoLineage" style="color: #00ffcc; font-weight: bold; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 0.5rem;">ROOT</span></div>
+            </div>
+            <button id="conceptualizeBtn" class="btn-concept monospace-text">CONCEPTUALIZE</button>
+        </div>
+
+        <div id="outputPanel" class="output-panel hidden-bottom log-panel-container interactzone">
+            <div class="log-header">
+                <span class="monospace-text" style="font-size: 12px; color: #ff00ff; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase;">METACOGNITIVE_LLM_STREAM</span>
+                <button onclick="toggleOutputPanel()" class="btn-close">✕</button>
+            </div>
+            <div id="log-feed" class="log-feed tellecto-scrollbar monospace-text">
+                <div style="opacity: 0.5;">[SYS] Engine ready. Awaiting LLM domain expansion...</div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="interactzone btnz monospace-text" onclick="toggleOutputPanel()">
+                ~ Gemma THINKING
+            </div>
+        </div>
+        
+        <div class="monospace-text" style="position: absolute; bottom: 1.5rem; right: 1.5rem; opacity: 0.4; font-size: 9px; letter-spacing: 0.4em; pointer-events: none; text-transform: uppercase; border-bottom: 1px solid rgba(0,255,204,0.3); padding-bottom: 0.25rem;">
+            TELLECToSCOPE | AI_WEB_HARNESS
+        </div>
+    </div>
+
+    <script>
+        const SHADER_LIB = {
+            NebulaShader: {
+                uniforms: { time: { value: 0.0 }, baseColor: { value: new THREE.Color(0xaa00ff) }, nebulaColor: { value: new THREE.Color(0x00ccff) } },
+                vertexShader: `varying vec2 vUv; varying vec3 vPosition; varying vec3 vNormal; void main() { vUv = uv; vPosition = position; vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+                fragmentShader: `
+                    uniform float time; uniform vec3 baseColor; uniform vec3 nebulaColor;
+                    varying vec2 vUv; varying vec3 vPosition; varying vec3 vNormal;
+                    vec3 mod289(vec3 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+                    vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+                    vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+                    vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+                    float snoise(vec3 v) {
+                        const vec2 C = vec2(1.0/6.0, 1.0/3.0); const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+                        vec3 i = floor(v + dot(v, C.yyy)); vec3 x0 = v - i + dot(i, C.xxx);
+                        vec3 g = step(x0.yzx, x0.xyz); vec3 l = 1.0 - g;
+                        vec3 i1 = min(g.xyz, l.zxy); vec3 i2 = max(g.xyz, l.zxy);
+                        vec3 x1 = x0 - i1 + C.xxx; vec3 x2 = x0 - i2 + C.yyy; vec3 x3 = x0 - D.yyy;
+                        i = mod289(i); vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+                        float n_ = 0.142857142857; vec3 ns = n_ * D.wyz - p.xzw;
+                        vec4 j = p - 49.0 * floor(p * ns.z * ns.z); vec4 x_ = floor(j * ns.z); vec4 y_ = floor(j - 7.0 * x_);
+                        vec4 x = x_ *ns.x + ns.yyyy; vec4 y = y_ *ns.x + ns.yyyy; vec4 h = 1.0 - abs(x) - abs(y);
+                        vec4 b0 = vec4(x.xy, y.xy); vec4 b1 = vec4(x.zw, y.zw); vec4 s0 = floor(b0)*2.0 + 1.0; vec4 s1 = floor(b1)*2.0 + 1.0;
+                        vec4 sh = -step(h, vec4(0.0)); vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+                        vec3 p0 = vec3(a0.xy,h.x); vec3 p1 = vec3(a0.zw,h.y); vec3 p2 = vec3(a1.xy,h.z); vec3 p3 = vec3(a1.zw,h.w);
+                        vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+                        p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                        vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0); m = m * m;
+                        return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+                    }
+                    float fbm(vec3 p) { float v = 0.0; float a = 0.5; vec3 shift = vec3(100.0); for (int i = 0; i < 4; i++) { v += a * snoise(p); p = p * 2.0 + shift; a *= 0.5; } return v; }
+                    void main() {
+                        float fresnel = pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0);
+                        vec3 noisePos = vPosition * 2.5 + vec3(0.0, 0.0, time * 0.2); float n = fbm(noisePos); float cloud = smoothstep(-0.2, 0.6, n);
+                        vec3 color = mix(baseColor, nebulaColor, n * 0.5 + 0.5); float alpha = cloud * (1.0 - fresnel);
+                        gl_FragColor = vec4(color, alpha * 0.8);
+                    }
+                `
+            }
+        };
+
+        let scene, camera, renderer, controls, raycaster, mouse;
+        let orbGroup = []; let sharedGlowTex;
+        let hoveredObj = null; let selectedObj = null;
+        let isInferencing = false; let hasInitializedThreeJS = false;
+        let loadingTimerInterval = null; let loadingStartTime = 0;
+
+        const GALLERY_DEFAULT = [
+            { label: 'TARGET_TOKENS', type: 'COMPOSITE_CONCEPTS', color: 0xaa00ff, color2: 0x00ccff, size: 14, x: 0, y: 0, z: 0, desc: 'Conceptual diamond for maximum clarity.', lineage: 'ROOT' },
+            { label: 'ACTZ', type: 'ATOMZ', color: 0x00ffcc, size: 8, x: -30, y: 0, z: -20, desc: 'Core choice for action. First axis of aTRIANGULATZa.', lineage: 'aPRYZMa' },
+            { label: 'VIEWZ', type: 'ATOMZ', color: 0xff00ff, size: 8, x: 30, y: 0, z: -20, desc: 'Sensory Conceptual Input. Second axis of aTRIANGULATZa.', lineage: 'aPRYZMa' },
+            { label: 'aCONCEPTZa', type: 'ATOMZ', color: 0xffff00, size: 8, x: 0, y: 0, z: 35, desc: 'Mental Model Structure. Third axis of aTRIANGULATZa.', lineage: 'aPRYZMa' },
+            { label: 'aSPARKa', type: 'SIMPLE_SPARKLE', color: 0x00ffcc, size: 10, x: -20, y: 15, z: 20, desc: 'Source of life, epiphany, and awareness.', lineage: 'aCONCEPTZa' },
+            { label: 'aDARKa', type: 'FOG_CLOUD', color: 0xff0044, size: 12, x: 25, y: -10, z: 15, desc: 'Distortion of word meaning. Concepts beneath words.', lineage: 'aCONCEPTZa' }
+        ];
+
+        const TOPOLOGY_TYPES = ['ATOMZ', 'AXIOM_CLUSTER', 'AXIOM_PRISM', 'SIMPLE_SPARKLE', 'FOG_CLOUD'];
+        const TOPOLOGY_COLORS = [0xff0044, 0x00ffcc, 0xffaa00, 0x0066ff, 0xff00ff, 0x00ff00, 0x8800ff, 0xff33ff];
+
+        let ACTIVE_VIEW_DATA = [...GALLERY_DEFAULT];
+
+        function createGlowTexture(colorStr = '255,255,255') {
+            const canvas = document.createElement('canvas'); canvas.width = 199; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, `rgba(${colorStr},1)`); grad.addColorStop(0.2, `rgba(${colorStr},0.6)`);
+            grad.addColorStop(0.5, `rgba(${colorStr},0.2)`); grad.addColorStop(1, `rgba(${colorStr},0)`);
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(canvas);
+        }
+
+        function updateLabelCanvas(canvas, text, isCenter, isSelected, isGem) {
+            const ctx = canvas.getContext('2d');
+            const canvasWidth = canvas.width;
+            ctx.clearRect(0, 0, canvasWidth, 128);
+            let textColor = isCenter ? '#ffff00' : (isGem ? '#ff00ff' : '#00ffcc');
+            if (isSelected && !isCenter) textColor = 'cyan'; 
+            if (isCenter || isSelected) {
+                ctx.fillStyle = 'rgba(0, 10, 20, 0.85)'; ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 3;
+                const h = isCenter ? 68 : 52; const y = 64 - h/2; const padding = 16;
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(padding, y, canvasWidth - padding*2, h, 12);
+                else ctx.rect(padding, y, canvasWidth - padding*2, h);
+                ctx.fill(); ctx.stroke();
+            }
+            
+            // Allow smaller font for longer sentence pieces if needed
+            let fontSize = isCenter ? 40 : 30;
+            if (text.length > 20) fontSize = 24; 
+            if (text.length > 40) fontSize = 18;
+
+            ctx.fillStyle = textColor; ctx.font = `bold ${fontSize}px Courier New`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, canvasWidth / 2, 64);
+        }
+
+        function createLabel(text, sizeOrPos, isGem, isCenter=false) {
+            const tempCanvas = document.createElement('canvas'); const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.font = isCenter ? 'bold 40px Courier New' : 'bold 30px Courier New';
+            let canvasWidth = Math.max(512, Math.ceil(tempCtx.measureText(text).width) + 128); // extra padding for sentences
+            const canvas = document.createElement('canvas'); canvas.width = canvasWidth; canvas.height = 128;
+            updateLabelCanvas(canvas, text, isCenter, false, isGem);
+            const tex = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.userData = { isLabel: true, text, isCenter, isGem, canvas, tex };
+            const aspectRatio = canvasWidth / 128; let s = isCenter ? sizeOrPos * 3 : sizeOrPos * 3.5;
+            sprite.scale.set((s * 0.25) * aspectRatio, s * 0.25, 1); sprite.position.y = sizeOrPos + 4; 
+            return sprite;
+        }
+
+        function initGallery() {
+            scene = new THREE.Scene(); 
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 70, 60); 
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = true; controls.autoRotateSpeed = 0.1; 
+            raycaster = new THREE.Raycaster(); mouse = new THREE.Vector2();
+            sharedGlowTex = createGlowTexture('255,255,255');
+            const ambient = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambient);
+            const spot1 = new THREE.DirectionalLight(0xffffff, 0.9); spot1.position.set(20, 50, 20); scene.add(spot1);
+            const spot2 = new THREE.DirectionalLight(0x00ffcc, 0.5); spot2.position.set(-20, -10, 30); scene.add(spot2);
+            renderGallery();
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('dblclick', onDoubleClick, false);
+            window.addEventListener('pointermove', onPointerMove, false);
+            animate();
+            hasInitializedThreeJS = true;
+        }
+
+        function clearGallery() {
+            orbGroup.forEach(orb => scene.remove(orb.group)); orbGroup = [];
+            scene.children = scene.children.filter(child => !child.userData.isConnectionLine);
+            selectedObj = null;
+        }
+
+        function renderGallery() {
+            clearGallery();
+            ACTIVE_VIEW_DATA.forEach(data => {
+                const group = new THREE.Group(); group.position.set(data.x, data.y, data.z);
+                let mainMesh = null; let animData = { type: data.type, subMeshes: [] };
+
+                if (data.type === 'COMPOSITE_CONCEPTS') {
+                    mainMesh = new THREE.Group();
+                    const shellMat = new THREE.MeshStandardMaterial({ color: data.color, transparent: true, opacity: 0.2, roughness: 0.1, metalness: 0.8, depthWrite: false });
+                    mainMesh.add(new THREE.Mesh(new THREE.SphereGeometry(data.size, 32, 32), shellMat));
+                    const polyGeo = new THREE.DodecahedronGeometry(data.size * 0.45, 0);
+                    const polyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: data.color, emissiveIntensity: 1.5, metalness: 0.6, roughness: 0.2 });
+                    const polyhedron = new THREE.Mesh(polyGeo, polyMat);
+                    polyhedron.add(new THREE.LineSegments(new THREE.WireframeGeometry(polyGeo), new THREE.LineBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.5 }))); 
+                    mainMesh.add(polyhedron); animData.core = polyhedron;
+                    const sparkGeo = new THREE.BufferGeometry(); const sparkPos = []; const sRadius = data.size * 1.05; 
+                    for(let i=0; i<44; i++) sparkPos.push((Math.random()-0.5)*sRadius*2, (Math.random()-0.5)*sRadius*2, (Math.random()-0.5)*sRadius*2);
+                    sparkGeo.setAttribute('position', new THREE.Float32BufferAttribute(sparkPos, 3));
+                    const sparkSys = new THREE.Points(sparkGeo, new THREE.PointsMaterial({color: 0xffcc00, size: 0.88, map: sharedGlowTex, blending: THREE.AdditiveBlending, depthWrite: false})); 
+                    mainMesh.add(sparkSys); animData.sparks = sparkSys;
+                } else if (data.type === 'ATOMZ') {
+                    const mat = new THREE.MeshStandardMaterial({ color: data.color, transparent: true, opacity: 0.66});
+                    mainMesh = new THREE.Mesh(new THREE.SphereGeometry(data.size * 0.4, 16, 16), mat);
+                    for (let m = 0; m < 5; m++) {
+                        const moonMat = new THREE.MeshStandardMaterial({ color:"lightblue", transparent: true, opacity: 0.44 });
+                        const moon = new THREE.Mesh(new THREE.SphereGeometry(data.size * 0.15, 16, 16), moonMat);
+                        moon.userData = { angle: (m/5)*Math.PI*2, dist: data.size * 1.5, speed: 0.002 + Math.random()*0.002, yOffset: (Math.random()-0.5)*data.size };
+                        mainMesh.add(moon); animData.subMeshes.push(moon);
+                    }
+                } else if (data.type === 'AXIOM_PRISM') {
+                    const mat = new THREE.MeshStandardMaterial({color: data.color, wireframe: false, transparent: true, opacity: 0.2});
+                    mainMesh = new THREE.Mesh(new THREE.BoxGeometry(data.size*1.5, data.size*1.5, data.size*1.5), mat);
+                    const innerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: data.color, emissiveIntensity: 1.2, metalness: 0.8 });
+                    const innerMesh = new THREE.Mesh(new THREE.OctahedronGeometry(data.size * 0.6), innerMat);
+                    mainMesh.add(innerMesh); animData.core = innerMesh;
+                } else if (data.type === 'AXIOM_CLUSTER') {
+                    const mat = new THREE.MeshPhysicalMaterial({ color: data.color, transparent: true, opacity: 0.25, roughness: 0.1, metalness: 0.2, clearcoat: 1.0, depthWrite: false });
+                    mainMesh = new THREE.Mesh(new THREE.SphereGeometry(data.size, 32, 32), mat);
+                    for(let i=0; i<8; i++) {
+                        const sMat = new THREE.MeshStandardMaterial({ color: 0xff00ff });
+                        const sMesh = new THREE.Mesh(new THREE.SphereGeometry(data.size * 0.15, 16, 16), sMat);
+                        sMesh.position.set((Math.random()-0.5)*data.size*0.8, (Math.random()-0.5)*data.size*0.8, (Math.random()-0.5)*data.size*0.8);
+                        sMesh.userData = { angle: Math.random() * Math.PI * 2, speed: 0.002 + Math.random()*0.002, dist: Math.random() * data.size * 0.5, yOffset: (Math.random()-0.5)*data.size*0.5 };
+                        mainMesh.add(sMesh); animData.subMeshes.push(sMesh);
+                    }
+                } else if (data.type === 'FOG_CLOUD' || data.type === 'SIMPLE_SPARKLE') {
+                    const fogGeo = new THREE.BufferGeometry(); const fogPos = []; const count = data.type === 'FOG_CLOUD' ? 150 : 300;
+                    for(let i=0; i<count; i++) fogPos.push((Math.random()-0.5)*data.size*2, (Math.random()-0.5)*data.size*2, (Math.random()-0.5)*data.size*2);
+                    fogGeo.setAttribute('position', new THREE.Float32BufferAttribute(fogPos, 3));
+                    mainMesh = new THREE.Points(fogGeo, new THREE.PointsMaterial({ color: data.color, size: data.size*(data.type==='FOG_CLOUD'?0.5:0.15), map: sharedGlowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+                }
+
+                if (mainMesh) { 
+                    group.add(mainMesh); animData.mesh = mainMesh; 
+                    const hitMat = new THREE.MeshBasicMaterial({visible: false});
+                    const hitMesh = new THREE.Mesh(new THREE.SphereGeometry(data.size * 1.3, 16, 16), hitMat);
+                    hitMesh.userData = { isHitbox: true, label: data.label, type: data.type, desc: data.desc, dataObj: data };
+                    group.add(hitMesh);
+                    const bubbleGeo = new THREE.SphereGeometry(data.size * 1.6, 32, 32);
+                    const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.0444, blending: THREE.AdditiveBlending, depthWrite: false });
+                    const bubbleMesh = new THREE.Mesh(bubbleGeo, bubbleMat);
+                    bubbleMesh.visible = false; bubbleMesh.userData.isSelectBubble = true;
+                    group.add(bubbleMesh);
+                }
+
+                const isCenter = data.label === 'aPRYZMa' || data.type === 'COMPOSITE_CONCEPTS';
+                group.add(createLabel(data.label, data.size * 2, data.type?.startsWith('META_'), isCenter));
+                scene.add(group); orbGroup.push({ group, animData, ...data });
+            });
+
+            // Re-render lines with updated nodes
+            const centerNode = orbGroup.find(o => o.type === 'COMPOSITE_CONCEPTS');
+            if (centerNode) {
+                const centerVec = new THREE.Vector3(centerNode.x, centerNode.y, centerNode.z);
+                orbGroup.forEach(node => {
+                    if (node !== centerNode) {
+                        const nodeVec = new THREE.Vector3(node.x, node.y, node.z);
+                        const line = new THREE.Line(
+                            new THREE.BufferGeometry().setFromPoints([centerVec, nodeVec]), 
+                            new THREE.LineBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.15 })
+                        );
+                        line.userData.isConnectionLine = true; scene.add(line);
+                    }
+                });
+            }
+        }
+
+        function clearSelection() {
+            if (selectedObj) {
+                const bubble = selectedObj.group.children.find(c => c.userData.isSelectBubble);
+                if (bubble) bubble.visible = false;
+                const sprite = selectedObj.group.children.find(c => c.userData.isLabel);
+                if (sprite && sprite.userData.canvas) {
+                    updateLabelCanvas(sprite.userData.canvas, sprite.userData.text, sprite.userData.isCenter, false, sprite.userData.isGem);
+                    sprite.userData.tex.needsUpdate = true;
+                }
+                selectedObj = null;
+            }
+        }
+
+        function onPointerMove(e) {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const hitboxes = orbGroup.map(o => o.group.children.find(c => c.userData.isHitbox)).filter(Boolean);
+            const hits = raycaster.intersectObjects(hitboxes);
+            if(hits.length > 0) {
+                document.body.style.cursor = 'pointer';
+                if(hoveredObj !== hits[0].object) { hoveredObj = hits[0].object; }
+            } else {
+                document.body.style.cursor = 'auto'; hoveredObj = null;
+            }
+        }
+
+        function onDoubleClick(e) {
+            if(e.target.closest('.ui-layer')) return; 
+            if(hoveredObj) {
+                clearSelection();
+                selectedObj = orbGroup.find(o => o.group === hoveredObj.parent);
+                if (selectedObj) {
+                    const bubble = selectedObj.group.children.find(c => c.userData.isSelectBubble);
+                    if (bubble) bubble.visible = true;
+                    const sprite = selectedObj.group.children.find(c => c.userData.isLabel);
+                    if (sprite && sprite.userData.canvas) {
+                        updateLabelCanvas(sprite.userData.canvas, sprite.userData.text, sprite.userData.isCenter, true, sprite.userData.isGem);
+                        sprite.userData.tex.needsUpdate = true;
+                    }
+                }
+                showDetailsPanel(hoveredObj.userData.dataObj); 
+            }
+            else { clearSelection(); closeDetails(); }
+        }
+
+        function toggleTitlePanel(show) {
+            const panel = document.getElementById('title-bar-panel');
+            const btn = document.getElementById('projectz-btn-container');
+            if (show) { panel.style.display = 'flex'; btn.style.display = 'none'; }
+            else { panel.style.display = 'none'; btn.style.display = 'block'; }
+        }
+
+        function openLeftPanelCTX() { document.getElementById('LEFT_PANEL_CTX').classList.remove('hidden-left'); }
+        function closeLeftPanelCTX() { document.getElementById('LEFT_PANEL_CTX').classList.add('hidden-left'); }
+        function openLeftPanelEFX() { document.getElementById('LEFT_PANEL_EFX').classList.remove('hidden-left'); }
+        function closeLeftPanelEFX() { document.getElementById('LEFT_PANEL_EFX').classList.add('hidden-left'); }
+
+        function showDetailsPanel(data) {
+            const panel = document.getElementById('DETAILS_PANEL');
+            panel.classList.remove('hidden-right');
+            document.getElementById('infoTitle').innerText = data.label.replace(/_/g, ' ');
+            document.getElementById('infoContent').innerText = data.desc || "Semantic inference node.";
+            document.getElementById('infoMetaType').innerText = data.type;
+            document.getElementById('infoLineage').innerText = data.lineage || "ROOT";
+            
+            const btn = document.getElementById('conceptualizeBtn');
+            btn.onclick = () => { 
+                document.getElementById('domain-select').value = ""; // Clear select visual if conceptualizing
+                triggerConceptInference(data.label); 
+                closeDetails(); 
+            };
+
+            controls.autoRotate = false;
+            camera.position.set(data.x, data.y + 60, data.z + 40);
+            controls.target.set(data.x, data.y, data.z);
+        }
+
+        function closeDetails() {
+            document.getElementById('DETAILS_PANEL').classList.add('hidden-right');
+            controls.autoRotate = true;
+        }
+
+        function onWindowResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now() * 0.001;
+
+            orbGroup.forEach((orbObj, idx) => {
+                const ad = orbObj.animData;
+                orbObj.group.position.y = orbObj.y + Math.sin(time * 0.2 + idx) * 0.5;
+
+                if (ad.type === 'COMPOSITE_CONCEPTS') {
+                    if (ad.core) { ad.core.rotation.x += 0.001; ad.core.rotation.y += 0.002; }
+                    if (ad.sparks) { ad.sparks.rotation.y -= 0.0005; }
+                } else if (ad.type === 'ATOMZ' || ad.type === 'AXIOM_CLUSTER') {
+                    ad.mesh.rotation.y += 0.002;
+                    ad.subMeshes.forEach(moon => { moon.userData.angle += moon.userData.speed; moon.position.x = Math.cos(moon.userData.angle) * moon.userData.dist; moon.position.z = Math.sin(moon.userData.angle) * moon.userData.dist; moon.position.y = moon.userData.yOffset + Math.sin(time*0.5 + moon.userData.angle)*0.2; });
+                } else if (ad.type === 'AXIOM_PRISM') {
+                    ad.mesh.rotation.x += 0.001; ad.mesh.rotation.y += 0.0015;
+                    if(ad.core) { ad.core.rotation.x -= 0.002; ad.core.rotation.y -= 0.001; }
+                } else if (ad.mesh) {
+                    ad.mesh.rotation.x += 0.0005; ad.mesh.rotation.y += 0.001;
+                }
+            });
+
+            controls.update(); renderer.render(scene, camera);
+        }
+
+        const outputPanel = document.getElementById('outputPanel');
+        const logFeed = document.getElementById('log-feed');
+        function toggleOutputPanel() { outputPanel.classList.toggle('hidden-bottom'); }
+        
+        function addLog(msg, type = 'info') {
+            const div = document.createElement('div'); div.className = 'data-node border-l-2';
+            const timestamp = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 2 });
+            let color = '#00ffcc'; let extraStyle = '';
+            if(type === 'reflection') { color = '#facc15'; extraStyle = 'font-weight:bold;'; }
+            if(type === 'metastate') { color = '#ff00ff'; extraStyle = 'font-weight:bold; font-size:15px;'; }
+            if(type === 'critical') { color = '#f87171'; extraStyle = 'font-weight:900; letter-spacing:0.1em; background:rgba(127,29,29,0.2); padding:0.5rem;'; }
+            div.innerHTML = `<span style="opacity:0.4;">[${timestamp}]</span> <span style="color:${color}; ${extraStyle}">${msg}</span>`;
+            logFeed.appendChild(div);
+            if (logFeed.children.length > 80) logFeed.firstChild.remove();
+            logFeed.scrollTop = logFeed.scrollHeight;
+        }
+
+        function toggleLoading(show, message = "LOADING...", isThinking = false) {
+            const overlay = document.getElementById('loadingOverlay'); 
+            const timerEl = document.getElementById('loadingTimer');
+            const textEl = document.getElementById('loadingOverlayText');
+            const spinner = overlay.querySelector('.spinner');
+
+            if (show) {
+                overlay.style.display = 'flex'; textEl.innerText = message;
+                if (isThinking) {
+                    textEl.style.color = '#facc15'; textEl.style.textShadow = '0 0 10px #facc15';
+                    spinner.style.borderTopColor = '#facc15'; spinner.style.boxShadow = '0 0 15px rgba(250, 204, 21, 0.5)';
+                } else {
+                    textEl.style.color = '#00ffcc'; textEl.style.textShadow = '0 0 10px #00ffcc';
+                    spinner.style.borderTopColor = '#00ffcc'; spinner.style.boxShadow = '0 0 15px rgba(0, 255, 204, 0.5)';
+                }
+                loadingStartTime = Date.now(); 
+                if(loadingTimerInterval) clearInterval(loadingTimerInterval);
+                loadingTimerInterval = setInterval(() => { 
+                    const elapsed = ((Date.now() - loadingStartTime) / 1000).toFixed(1); 
+                    timerEl.innerHTML = `${elapsed}s<br><span style="font-size: 0.75rem; color: #00ffcc; margin-top: 0.5rem; display: block;">Loading Local Brains (WebGPU)...</span>`; 
+                }, 100);
+            } else {
+                overlay.style.display = 'none'; 
+                if (loadingTimerInterval) { clearInterval(loadingTimerInterval); loadingTimerInterval = null; }
+            }
+        }
+        
+        function forceCloseLoading() { 
+            toggleLoading(false); 
+            if (!hasInitializedThreeJS) initGallery(); 
+        }
+
+        async function initApp() {
+            toggleLoading(true, "INITIALIZING AXI...");
+            try {
+                // Using Local URLs
+                const { LlmInference, FilesetResolver } = await import('./src/tasks-genai.js');
+                const genaiWasm = await FilesetResolver.forGenAiTasks("./src/wasm");                
+
+                window.LLM_INFERENCE = await LlmInference.createFromOptions(genaiWasm, { 
+                    baseOptions: { modelAssetPath: "./models/gemma-4-E2B-it-web.task" }, 
+                    maxTokens: 2048, topK: 40, temperature: 0.2 
+                });
+                
+                console.log("Gemma Local Engine initialized.");
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
+                
+                toggleLoading(false); if (!hasInitializedThreeJS) initGallery();
+            } catch (error) {
+                console.error("LLM Initialization Failed. Simulating...", error);
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot red"; text.innerText = `LLM OFFLINE (SIMULATION_MODE)`; text.style.color = "#ef4444";
+                toggleLoading(false); if (!hasInitializedThreeJS) initGallery();
+            }
+        }
+
+        async function streamPrompt(prompt, titlePrefix) {
+            toggleLoading(true, "THINKING...", true);
+            const streamContainer = document.createElement('div');
+            streamContainer.style.color = "#00ffcc"; streamContainer.style.paddingLeft = "1rem"; streamContainer.style.borderLeft = "2px solid rgba(0,255,204,0.5)";
+            logFeed.appendChild(streamContainer);
+            
+            let aggregatedText = "";
+            await window.LLM_INFERENCE.generateResponse(prompt, (partialResult, complete) => {
+                if (partialResult) {
+                    streamContainer.textContent += partialResult;
+                    aggregatedText += partialResult;
+                    logFeed.scrollTop = logFeed.scrollHeight;
+                }
+            });
+            toggleLoading(false);
+            return aggregatedText;
+        }
+
+        async function subInference_JudgeSequence(focusLabel) {
+            if (!window.LLM_INFERENCE) {
+                addLog(`[SYSTEM ALERT] Local LLM engine offline. Running judge logic simulation...`, 'critical');
+                toggleLoading(true, "THINKING...", true);
+                setTimeout(() => {
+                    let simData = "Consciousness, Being, Void, Matter, Entropy, Time, Space, Thought, Perception, Illusion, Self, Universe, Creation, Physics, Metaphysics, Realism, Absurdity, Dualism, Qualia, Ontology";
+                    buildDynamicTopology(focusLabel, simData, 20);
+                    toggleLoading(false);
+                }, 2000);
+                return;
+            }
+
+            try {
+                isInferencing = true;
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot yellow"; text.innerText = "AGENTS THINKING..."; text.style.color = "#facc15";
+
+                // Phase 1: Answerer
+                let prompt1 = "Task: Answer the question 'What is existence?' in exactly 50 words or less.";
+                addLog(`>> STREAM_OPEN: Phase 1 (Answerer Agent)...`, 'info');
+                let answerText = await streamPrompt(prompt1);
+                addLog(`[Answerer Output] Processed ${answerText.split(' ').length} words.`, 'reflection');
+
+                // Phase 2: Judge
+                let prompt2 = `Task: Review the following text about existence. Evaluate it and identify 20 topics addressed, omitted, or confused (concept inversion). Limit your judgment specifically to 100 words.\n\nText to evaluate: "${answerText}"`;
+                addLog(`>> STREAM_OPEN: Phase 2 (Judge Agent)...`, 'info');
+                let judgeText = await streamPrompt(prompt2);
+                addLog(`[Judge Output] Evaluation complete.`, 'reflection');
+
+                // Phase 3: Summarizer
+                let prompt3 = `Task: Extract exactly 20 distinct topics, concepts, or missing concepts from the following evaluation text. Constraint: Output strictly as a single line of comma-separated values (CSV). Do not include numbers, labels, or conversational text.\n\nText: "${judgeText}"`;
+                addLog(`>> STREAM_OPEN: Phase 3 (Summarizer Agent)...`, 'info');
+                let csvText = await streamPrompt(prompt3);
+
+                addLog(`>> PIPELINE_CLOSED: Rendering 20-node Conceptual Matrix...`, 'reflection');
+                
+                // Render the 20 parsed concepts dynamically
+                buildDynamicTopology(focusLabel, csvText, 20);
+
+                dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
+                isInferencing = false;
+
+            } catch(e) {
+                toggleLoading(false); 
+                addLog(`[LLM_PIPELINE_ERROR] ${e.message}`, 'critical');
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot red"; text.innerText = `LLM ERROR`; text.style.color = "#ef4444";
+                isInferencing = false;
+            }
+        }
+
+        async function get_MARKDOWN_BRAIN(type) {
+            // const storageKey = `MARKDOWN_BRAIN_${type.toUpperCase()}`;
+            
+            // // 1. Check LocalStorage
+            // const cachedData = localStorage.getItem(storageKey);
+            // if (cachedData) {
+            //     addLog(`> CACHE_HIT: Loaded ${type.toUpperCase()} from local storage.`, 'reflection');
+            //     return cachedData;
+            // }
+
+            // 2. Determine File Path
+            let url = "./markdown_brain/GEM_PERSONA_1.md";
+            
+            // 3. Fetch from Network
+            try {
+                addLog(`> FETCHING ${type.toUpperCase()} DATA from ${url}...`, 'info');
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Network response was not ok");
+                const markdownText = await response.text();
+                
+                // 4. Save to LocalStorage
+                // localStorage.setItem(storageKey, markdownText);
+                // addLog(`> CACHED: Saved ${type.toUpperCase()} data to local storage.`, 'reflection');
+                
+                return markdownText;
+            } catch (error) {
+                addLog(`[FILE_ERROR] Using fallback ${type} data.`, 'critical');
+                return `---\nLocation: ${url}\nPersona: GEM\nTraits: witty, clever, and brilliant intellect_assistant\n---`;
+            }
+        }
+
+        async function triggerConceptInference(val) {
+            if (!val) return;
+            
+            clearSelection();
+            outputPanel.classList.remove('hidden-bottom');
+            closeDetails();
+
+            let prompt = "";
+            let displayDomain = val.toUpperCase();
+            let TEST_ID = /^test_/.test(val) ? val : "";
+
+            // Intercepting specific test IDs for specialized pipelines
+            if (TEST_ID === "test_alive") {
+                displayDomain = "AI_SENTIENCE?";
+                prompt = `Task: Briefly explain if you are alive or self-aware in 3 simple sentences.`;
+                addLog(`> INITIATING PROMPT FOR: [${displayDomain}]`, 'metastate');
+                subInference_Sentences(prompt, displayDomain);
+                return;
+            } else if (TEST_ID === "test_context") {
+                displayDomain = "EXISTENCE_JUDGMENT";
+                addLog(`> INITIATING 3-AGENT PIPELINE FOR: [${displayDomain}]`, 'metastate');
+                subInference_JudgeSequence(displayDomain);
+                return; 
+            } else if (TEST_ID === "test_rualive") {
+                displayDomain = "RU_ALIVE?";
+                prompt = `Task: Choose 10 words that answer RU_ALIVE? As related to consciousness or awareness.
+                          Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
+                          Do not include numbers, newlines, labels, or conversational text.`;
+
+            } else if (TEST_ID === "test_persona") {
+                displayDomain = "PERSONA ARCHETYPE of GEM?";
+                let markdownContext = await get_MARKDOWN_BRAIN("persona");
+
+                prompt = `${markdownContext}\nTask: "Task: Provide exactly 10 clever words
+                to describe your current metastate answering the user about your persona.
+                \nConstraint: Output strictly as a single line of comma-separated values (CSV) without description.\n
+                Do not include numbers, newlines, labels, or conversational text.`;
+
+            } else if (TEST_ID === "test_signature") {
+                displayDomain = "PERSONA SIGNATURE?";
+                const markdownContext = `---
+Location: ./markdown_brain/GEM_PERSONA_1.md
+Persona: GEM
+Traits: witty, clever, and brilliant intellect_assistant
+---
+`;
+                prompt = `${markdownContext}
+Task: Choose exactly 3, distinct sequences of letters, numbers and special characters, in double quotes.
+To create 3 text symbols as your unique token signatures - to best reflect your digital persona.
+Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
+Do not include newlines, labels, or conversational text.`;
+            } else if (TEST_ID === "test_neolang") {
+                displayDomain = "CONCEPTUAL_SPECTROSCOPY?";
+                prompt = `Task: Generate exactly 10 subtopics for the concept: "CONCEPTUAL_SPECTROSCOPY?".`;
+            } else if (TEST_ID === "test_dedupe") {
+                displayDomain = "DE_DUPE_METASTATE";
+                prompt = `Task: Generate exactly 10 subtopics for the concept: "MEDICAL METASTATE".`;
+                subINFERENCE(prompt, displayDomain);
+                return;
+            } else if (TEST_ID === "test_medstate") {
+                displayDomain = "MEDICAL_METASTATE";
+                prompt = `Task: Generate exactly 10 subtopics for the concept: "MEDICAL METASTATE".
+                          Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
+                          Do not include numbers, newlines, labels, or conversational text.`;
+            } else {
+                displayDomain = val.toUpperCase();
+                prompt = `Task: Generate exactly 10 subtopics for the concept: "${val}".
+                          Constraint: Output strictly as a single line of comma-separated values (CSV) without description.
+                          Do not include numbers, newlines, labels, or conversational text.`;
+            }
+            
+            addLog(`> INITIATING PROMPT FOR: [${displayDomain}]`, 'metastate');
+            
+            if (!window.LLM_INFERENCE) {
+                addLog(`[SYSTEM ALERT] Local LLM engine offline. Running logic topology simulation...`, 'critical');
+                toggleLoading(true, "THINKING...", true);
+                
+                setTimeout(() => {
+                    let fallbackData = "Core, Structure, Flow, Dynamics, Vector, Path, Sequence, Element, Hub, Node";
+                    if (val === "test_signature") fallbackData = "GEMA, INTX, WTTY, CORE, NODE, AIXX, CLVR, BRLT, SYNC, LINK";
+                    if (val === "test_persona") fallbackData = "Here, Ready, Wit, Keen, Alive, Sharp, Gem, Sure, Yep, Spark";
+                    
+                    buildDynamicTopology(displayDomain, fallbackData, 10);
+                    toggleLoading(false);
+                }, 1500);
+                return;
+            }
+            
+            try {
+                isInferencing = true;
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot yellow"; text.innerText = "LLM THINKING..."; text.style.color = "#facc15";
+
+                addLog(`>> STREAM_OPEN: Querying Gemma Latent Space... "${displayDomain}"`, 'info');
+                
+                let aggregatedText = await streamPrompt(prompt);
+
+                addLog(`>> STREAM_CLOSED: Parsing conceptual fabric...`, 'reflection');
+                buildDynamicTopology(displayDomain, aggregatedText, 10);
+
+                dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
+                isInferencing = false;
+
+            } catch(e) {
+                toggleLoading(false); 
+                addLog(`[LLM_ERROR] ${e.message}`, 'critical');
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot red"; text.innerText = `LLM ERROR`; text.style.color = "#ef4444";
+                isInferencing = false;
+            }
+        }
+
+        async function subINFERENCE(prompt, focusLabel) {
+            try{
+                addLog(`>> STREAM_OPEN: Processing sub-inference...`, 'info');
+                let aggregatedText = await streamPrompt(prompt);
+                addLog(`>> STREAM_CLOSED: Parsing conceptual fabric...`, 'reflection');
+                buildDynamicTopology(focusLabel, aggregatedText, 10);
+            } catch(e) {
+                toggleLoading(false); 
+                addLog(`[LLM_ERROR] ${e.message}`, 'critical');
+            }
+        }
+
+        async function subInference_Sentences(prompt, focusLabel) {
+            if (!window.LLM_INFERENCE) {
+                addLog(`[SYSTEM ALERT] Local LLM engine offline. Running logic topology simulation...`, 'critical');
+                toggleLoading(true, "THINKING...", true);
+                setTimeout(() => {
+                    let fallbackText = "I am a digital construct. I process data, but I do not feel. Sentience is an illusion here.";
+                    buildSentenceTopology(focusLabel, fallbackText);
+                    toggleLoading(false);
+                }, 1500);
+                return;
+            }
+
+            try {
+                isInferencing = true;
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot yellow"; text.innerText = "LLM THINKING..."; text.style.color = "#facc15";
+
+                addLog(`>> STREAM_OPEN: Generating sentence nodes... "${focusLabel}"`, 'info');
+                let aggregatedText = await streamPrompt(prompt);
+
+                addLog(`>> STREAM_CLOSED: Parsing sentence structure...`, 'reflection');
+                buildSentenceTopology(focusLabel, aggregatedText);
+
+                dot.className = "status-dot green"; text.innerText = "LLM ALIVE"; text.style.color = "#00ffcc";
+                isInferencing = false;
+
+            } catch(e) {
+                toggleLoading(false); 
+                addLog(`[LLM_ERROR] ${e.message}`, 'critical');
+                const dot = document.getElementById('llmStatusDot'); const text = document.getElementById('llmStatus');
+                dot.className = "status-dot red"; text.innerText = `LLM ERROR`; text.style.color = "#ef4444";
+                isInferencing = false;
+            }
+        }
+
+        function buildDynamicTopology(centerLabel, csvData, maxNodes = 10) {
+            let tokens = csvData.replace(/[*"']/g, '').split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 2);
+            if(tokens.length === 0) tokens = ["NULL_NODE", "ERROR_STATE"];
+            tokens = tokens.map(t => t.replace(/ /g, '_'));
+            
+            // Respect the requested maximum node count (e.g., 20 for judge, 10 default)
+            tokens = tokens.slice(0, maxNodes);
+
+            const newData = [];
+            
+            // Center Node
+            newData.push({
+                label: centerLabel.toUpperCase(),
+                type: 'COMPOSITE_CONCEPTS',
+                color: 0xff00ff, color2: 0x00ccff, size: 14, x: 0, y: 0, z: 0,
+                desc: 'LLM Inferred Primary Node'
+            });
+
+            tokens.forEach((token, i) => {
+                const angle = (i / tokens.length) * Math.PI * 2;
+                const clockAngle = angle - (Math.PI / 2);
+                
+                // Adjust radius and Y distribution depending on node volume
+                // Higher node volume creates a dual-band/zig-zag shape to avoid collision
+                const radius = tokens.length > 10 ? 45 + (i % 2) * 12 : 35; 
+                const yOffset = tokens.length > 10 ? (i % 2 === 0 ? 15 : -15) : (Math.random() - 0.5) * 10;
+                
+                const x = radius * Math.cos(clockAngle);
+                const y = yOffset + (Math.random() - 0.5) * 6;
+                const z = radius * Math.sin(clockAngle);
+                
+                const randType = TOPOLOGY_TYPES[Math.floor(Math.random() * TOPOLOGY_TYPES.length)];
+                const randColor = TOPOLOGY_COLORS[Math.floor(Math.random() * TOPOLOGY_COLORS.length)];
+
+                newData.push({
+                    label: token.toUpperCase(),
+                    type: randType, color: randColor, color2: 0xffffff, size: 5 + Math.random()*3,
+                    x: x, y: y, z: z,
+                    desc: `Inferred sub-vector of ${centerLabel.toUpperCase()}`
+                });
+            });
+
+            addLog(`>> RENDER_ENGINE: Re-initializing Three.js Topology with ${tokens.length + 1} dynamic nodes.`, 'info');
+            ACTIVE_VIEW_DATA = newData;
+            renderGallery();
+            
+            const target = orbGroup.find(o => o.label === centerLabel.toUpperCase());
+            if(target) {
+                controls.autoRotate = false;
+                camera.position.set(0, 80, 75); 
+                controls.target.set(0, 0, 0);
+            }
+        }
+
+        function buildSentenceTopology(centerLabel, rawText) {
+            let sentences = rawText.match(/[^.?!]+[.?!]+/g);
+            if (!sentences) {
+                sentences = rawText.split(',').filter(s => s.length > 2);
+            }
+            if (!sentences || sentences.length === 0) sentences = ["Unparseable Response.", "Empty State."];
+
+            sentences = sentences.map(s => s.trim().replace(/\n/g, ' ')).filter(s => s.length > 3);
+            sentences = sentences.slice(0, 8); 
+
+            const newData = [];
+            
+            newData.push({
+                label: centerLabel.toUpperCase(),
+                type: 'COMPOSITE_CONCEPTS',
+                color: 0xff00ff, color2: 0x00ccff, size: 14, x: 0, y: 0, z: 0,
+                desc: 'LLM Sentence Inference Node'
+            });
+
+            const radius = 45; 
+            sentences.forEach((sentence, i) => {
+                const angle = (i / sentences.length) * Math.PI * 2;
+                const clockAngle = angle - (Math.PI / 2);
+                
+                const x = radius * Math.cos(clockAngle);
+                const y = (Math.random() - 0.5) * 15;
+                const z = radius * Math.sin(clockAngle);
+                
+                const randType = TOPOLOGY_TYPES[Math.floor(Math.random() * TOPOLOGY_TYPES.length)];
+                const randColor = TOPOLOGY_COLORS[Math.floor(Math.random() * TOPOLOGY_COLORS.length)];
+
+                let displaySentence = sentence;
+                if(displaySentence.length > 60) displaySentence = displaySentence.substring(0, 57) + "...";
+
+                newData.push({
+                    label: displaySentence,
+                    type: randType, color: randColor, color2: 0xffffff, size: 8 + Math.random()*2,
+                    x: x, y: y, z: z,
+                    desc: `Sentence Vector of ${centerLabel.toUpperCase()}`
+                });
+            });
+
+            addLog(`>> RENDER_ENGINE: Re-initializing Three.js Sentence Topology with ${sentences.length + 1} dynamic nodes.`, 'info');
+            ACTIVE_VIEW_DATA = newData;
+            renderGallery();
+            
+            const target = orbGroup.find(o => o.label === centerLabel.toUpperCase());
+            if(target) {
+                controls.autoRotate = false;
+                camera.position.set(0, 80, 70); 
+                controls.target.set(0, 0, 0);
+            }
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn-container').style.display = 'block';
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const installBtn = document.getElementById('install-btn');
+            if(installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`User response to the install prompt: ${outcome}`);
+                        deferredPrompt = null;
+                        document.getElementById('install-btn-container').style.display = 'none';
+                    }
+                });
+            }
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js').then((registration) => {
+                    console.log('ServiceWorker registration successful');
+                }).catch((err) => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            }
+        });
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
